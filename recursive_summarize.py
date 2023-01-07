@@ -5,16 +5,18 @@ import os
 import json
 import graphlib
 import openai
+import pyChatGPT
 import backoff
 import argparse
 # For syntax highlighting
 from pygments import highlight, lexers, formatters
 
-# Replace this with your own OpenAI API key, or set the OPENAI_API_KEY
-if not 'OPENAI_API_KEY' in os.environ:
-    openai.api_key_path = '/Users/moyix/codex_cve/openai.key'
+# TODO: put here chatGPT session token in cokki
+ChatGPTSessionToken = "<YOUR CHATGPT SESSION TOKEN>"
 
 DEBUG = False
+CurrentConvoId = uuid.uuid4()
+api = ChatGPT(ChatGPTSessionToken)
 
 def clean_decomp(decomp):
     return decomp.strip('\n') + '\n'
@@ -53,19 +55,12 @@ def summarize(text, max_tokens=256):
         print("PROMPT:")
         print(text)
     try:
-        completion = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=text,
-            temperature=0.7,
-            max_tokens=max_tokens,
-            top_p=1,
-            stop=["\n\n"]
-        )['choices'][0]['text'].strip()
-    except openai.error.InvalidRequestError as e:
-        if 'maximum context length' in str(e):
-            raise PromptTooLongError(str(e))
-        else:
-            raise e
+        resp = api.send_message(text)
+        completion = resp['message']
+
+    except err:
+        print(err)
+        return None
     if DEBUG:
         print("SUMMARY:")
         print(completion)

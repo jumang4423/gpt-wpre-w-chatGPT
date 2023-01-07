@@ -4,3 +4,4 @@ backoff
 pygments
 transformers
 tqdm
+pyChatGPT
