@@ -1,0 +1,1 @@
+{"_start": ["main"], "__do_global_dtors_aux": ["deregister_tm_clones"], "frame_dummy": ["register_tm_clones"], "_init": [], "FUN_00101020": [], "deregister_tm_clones": [], "register_tm_clones": [], "main": [], "_fini": []}

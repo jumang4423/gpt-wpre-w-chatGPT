@@ -5,18 +5,39 @@ import os
 import json
 import graphlib
 import openai
-import pyChatGPT
+import uuid
+from pyChatGPT import ChatGPT
 import backoff
 import argparse
 # For syntax highlighting
 from pygments import highlight, lexers, formatters
 
-# TODO: put here chatGPT session token in cokki
-ChatGPTSessionToken = "<YOUR CHATGPT SESSION TOKEN>"
+config = {
+    # TODO: enter chatGPT page session_token
+    "session_token": "YOUR SESSION TOKEN GOES HERE",
+    "prompts": [
+        "explain this function",
+        "decompile to python",
+        "explain all variables",
+        "is this vulnerable?, if so, explain or write exploit in python",
+        "any unknowns in this function?",
+        "next to do based on this code?",
+    ],
+}
+
+def prompt_selecter() -> int:
+    print('Select a prompt:')
+    for i,prompt in enumerate(config['prompts']):
+        print(i, ": ",prompt)
+    return int(input())
+
+def string2filename(s):
+    return ''.join([c if c.isalnum() else '_' for c in s])
 
 DEBUG = False
 CurrentConvoId = uuid.uuid4()
-api = ChatGPT(ChatGPTSessionToken)
+whatToAsk = config['prompts'][prompt_selecter()]
+api = ChatGPT(config['session_token'], conversation_id=CurrentConvoId)
 
 def clean_decomp(decomp):
     return decomp.strip('\n') + '\n'
@@ -49,21 +70,19 @@ def print_call_tree(root, callgraph, depth=0):
 class PromptTooLongError(Exception):
     pass
 
-@backoff.on_exception(backoff.expo, openai.error.RateLimitError)
 def summarize(text, max_tokens=256):
-    if DEBUG:
-        print("PROMPT:")
-        print(text)
+    completion = ""
     try:
         resp = api.send_message(text)
         completion = resp['message']
+        CurrentConvoId = conversation_id
+    except:
+        print("error while summarizing")
+        print("try in 1h later")
+        sys.exit(1)
 
-    except err:
-        print(err)
-        return None
-    if DEBUG:
-        print("SUMMARY:")
-        print(completion)
+    print("SUMMARY:")
+    print(completion)
     return completion
 
 def summarize_short_code(decomp, summaries, callees):
@@ -72,7 +91,8 @@ def summarize_short_code(decomp, summaries, callees):
         prompt += 'Given the following summaries:\n'
         for callee in callees:
             prompt += f'{callee}: {summaries[callee]}\n'
-    prompt += 'Describe what this function does in a single sentence:\n'
+    prompt += whatToAsk
+    prompt += ' in a single sentence:\n'
     prompt += '```\n' + decomp + '\n```\n'
     one_line_summary = summarize(prompt)
     return one_line_summary
@@ -92,9 +112,11 @@ def summarize_long_code(decomp, summaries, callees, max_lines=100, strategy='lon
             for j,chunk_summary in enumerate(chunk_summaries):
                 prompt += f'Part {j+1}: {chunk_summary}\n'
         if strategy == 'long':
-            prompt += 'Describe what this code does in a paragraph:\n'
+            prompt += whatToAsk
+            prompt += ' in a paragraph:\n'
         elif strategy == 'short':
-            prompt += 'Describe what this code does in a single sentence:\n'
+            prompt += whatToAsk
+            prompt += ' in a single sentence:\n'
         else:
             raise ValueError('Invalid strategy')
         prompt += '```\n' + '\n'.join(codelines[i:i+max_lines]) + '\n```\n'
@@ -105,7 +127,8 @@ def summarize_long_code(decomp, summaries, callees, max_lines=100, strategy='lon
     prompt = 'Given the following summaries of the code:\n'
     for i,chunk_summary in enumerate(chunk_summaries):
         prompt += f'Part {i+1}/{len(chunk_summaries)}: {chunk_summary}\n'
-    prompt += 'Describe what the code does in a single sentence.\n'
+    prompt += whatToAsk
+    prompt += ' in a single sentence.\n'
     one_line_summary = summarize(prompt)
     return one_line_summary
 
@@ -158,57 +181,6 @@ TOKEN_PRICE_PER_K_CENTS = 2
 MODEL_MAX_TOKENS = 4096
 DUMMY_SHORT_SUMMARY = 'This function checks a value in a given location and, if it meets a certain condition, calls a warning function; otherwise, it calls an error function.'
 DUMMY_LONG_SUMMARY = 'This code is responsible for validating and initializing an inflate stream. It checks if a given parameter is greater than a limit and calls a warning or error function depending on the result, allocates a block of memory of size param_2 and returns a pointer to it, sets the bits of a uint stored at a different memory address based on the value of a ushort at a specific memory address, checks if a given value is a known sRGB profile and calls a warning or error function depending on the value and parameters, and if valid, sets up the third parameter with a certain value, checks if a read function is valid and computes a CRC32 value for a given input if the parameter is not NULL before producing an error, and reads a specified memory location, checks if a window size is valid, calls a read function, computes a CRC32 value, and stores an error message corresponding to the given parameter.'
-def estimate_usage(callgraph, decompilations, max_lines=100):
-    # Suppress logging in transformers
-    os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
-    from transformers import GPT2TokenizerFast
-    tokenizer = GPT2TokenizerFast.from_pretrained('gpt2')
-    tokenizer.model_max_length = sys.maxsize
-
-    # Override summarize() to just count API calls
-    global summarize
-    num_api_calls = 0
-    num_prompt_tokens = 0
-    num_generated_tokens = 0
-    def dummy_summarize(prompt, max_tokens=256):
-        nonlocal num_api_calls, num_prompt_tokens, num_generated_tokens
-        num_api_calls += 1
-        prompt_tokens = len(tokenizer.encode(prompt))
-        if prompt_tokens + max_tokens > MODEL_MAX_TOKENS:
-            raise PromptTooLongError(f'Prompt too long: {prompt_tokens} + {max_tokens} > {MODEL_MAX_TOKENS}')
-        num_prompt_tokens += prompt_tokens
-        if max_tokens == 256:
-            num_generated_tokens += len(tokenizer.encode(DUMMY_SHORT_SUMMARY))
-            return DUMMY_SHORT_SUMMARY
-        elif max_tokens == 512:
-            num_generated_tokens += len(tokenizer.encode(DUMMY_LONG_SUMMARY))
-            return DUMMY_LONG_SUMMARY
-        else:
-            num_generated_tokens += max_tokens
-            return 'x' * max_tokens
-    summarize = dummy_summarize
-    topo_order = list(graphlib.TopologicalSorter(callgraph).static_order())
-
-    # Estimate usage
-    summaries = {}
-    for summary in summarize_all(topo_order, callgraph, decompilations, max_lines=max_lines):
-        summaries.update(summary)
-
-    if len(topo_order) != len(summaries):
-        print(f"Note: simulation failed after summarizing {len(summaries)}/{len(topo_order)} functions.")
-        failed_func = topo_order[len(summaries)]
-        decomp_loc = clean_decomp(decompilations[failed_func]).count('\n') + 1
-        print(f"Failed function: {failed_func} with {len(callgraph[failed_func])} callees and {decomp_loc} LoC")
-        print("Estimates will reflect only the functions that were summarized.")
-    print("===== API usage estimates =====")
-    print(f"Number of functions: {len(summaries)}")
-    print(f"Estimated API calls: {num_api_calls}")
-    print(f"Estimated prompt tokens: {num_prompt_tokens}")
-    print(f"Estimated generated tokens: {num_generated_tokens}")
-    total_usage = num_prompt_tokens + num_generated_tokens
-    cost_in_cents = total_usage * TOKEN_PRICE_PER_K_CENTS / 1000
-    cost_in_dollars = cost_in_cents / 100
-    print(f"Estimated cost: ${cost_in_dollars:.2f}")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -217,7 +189,6 @@ def main():
     parser.add_argument('-g', '--call-graph', required=False, default='call_graph.json')
     parser.add_argument('-o', '--output', required=False, help='Output file (default: progdir/summaries.jsonl)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
-    parser.add_argument('-n', '--dry-run', action='store_true', help="Don't actually call OpenAI, just estimate usage")
     parser.add_argument('-l', '--max-lines', type=int, default=100, help='Maximum number of lines to summarize at a time')
 
     parser.add_argument('progdir')
@@ -231,10 +202,10 @@ def main():
     if args.function is not None:
         callgraph = subgraph(callgraph, args.function)
         if args.output is None:
-            args.output = f'summaries_{args.function}.jsonl'
+            args.output = f'summaries_{args.function}' + string2filename(whatToAsk) + '.jsonl'
     else:
         if args.output is None:
-            args.output = 'summaries.jsonl'
+            args.output = 'summaries_' + string2filename(whatToAsk) + '.jsonl'
 
     # TODO: handle non-trivial cycles
     topo_order = list(graphlib.TopologicalSorter(callgraph).static_order())
@@ -263,10 +234,6 @@ def main():
         tqdm = FakeTqdm
     else:
         from tqdm import tqdm
-
-    if args.dry_run:
-        estimate_usage(callgraph, decompilations, max_lines=args.max_lines)
-        return
 
     # Create the summaries by summarizing leaf functions first, then
     # working our way up the call graph; for non-leaf functions, we

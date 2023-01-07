@@ -1,15 +1,42 @@
-# GPT-WPRE: Whole-program Reverse Engineering with GPT-3
+# GPT-WPRE: Whole-program Reverse Engineering with ChatGPT
 
-This is a little toy prototype of a tool that attempts to summarize a whole binary using GPT-3 (specifically the `text-davinci-003` model), based on decompiled code provided by [Ghidra](https://ghidra-sre.org/). However, today's language models can only fit a small amount of text into their context window at once (4096 tokens for `text-davinci-003`, a couple hundred lines of code at most) -- most programs (and even some functions) are too big to fit all at once.
+This is a little toy prototype of a tool that attempts to summarize a whole binary using ChatGPT, based on decompiled code provided by [Ghidra](https://ghidra-sre.org/). -- most programs (and even some functions) are too big to fit all at once.
 
 GPT-WPRE attempts to work around this by recursively creating natural language summaries of a function's dependencies and then providing those as context for the function itself. It's pretty neat when it works! I have tested it on exactly one program, so YMMV.
+
+## limitation
+
+chatGPT doesnt enable us from sending a lot of prompts.
+so if you need more power, use gpt3 OR wait for another 1h.
+
+## preparation
+
+1. to configure your session_token(__Secure-next-auth.session-token) of chatGPT, modify recursive_sumarize.py, config["session_token"]
+
+2. resolve dependancies of python
+
+``` console
+pip3 install -r requirements.txt
+```
+
+3. decompile binary
+
+``` console
+$ python3 extract_ghidra_decomp.py
+
+```
+
+4. start completion
+
+``` console
+$ python3 recursive_summarize.py ./a.out
+```
 
 ## Dependencies
 
 You need:
 * [Ghidra](https://ghidra-sre.org/)
 * [ghidra_bridge](https://github.com/justfoxing/ghidra_bridge) installed and running in the project you want to analyze.
-* [An OpenAI API key](https://beta.openai.com/account/api-keys)
 * The Python dependencies, which you can get with `pip install -r requirements.txt`
 
 ## Usage
@@ -50,36 +77,11 @@ options:
   -o OUTPUT, --output OUTPUT
                         Output file (default: progdir/summaries.jsonl)
   -v, --verbose         Enable verbose logging
-  -n, --dry-run         Don't actually call OpenAI, just estimate usage
   -l MAX_LINES, --max-lines MAX_LINES
                         Maximum number of lines to summarize at a time
 ```
 
-**Important**: The GPT-3 API is not free! The model we're using, `text-davinci-003`, costs $0.02 per 1000 tokens, which can add up for a large program. You can use the `--dry-run` (`-n`) flag to estimate the cost of running GPT-WPRE on a program without actually running it:
-
-```console
-$ python recursive_summarize.py -n libpng16.so.16.38.0_stripped
-===== API usage estimates =====
-Number of functions: 466
-Estimated API calls: 711
-Estimated prompt tokens: 784477
-Estimated generated tokens: 45601
-Estimated cost: $16.60
-```
-
-$16.60 is way too much for my academic budget, so let's try to summarize only a single function:
-
-```console
-$ python recursive_summarize.py -n -f png_read_info libpng16.so.16.38.0_stripped
-===== API usage estimates =====
-Number of functions: 72
-Estimated API calls: 76
-Estimated prompt tokens: 74311
-Estimated generated tokens: 2799
-Estimated cost: $1.54
-```
-
-Much better. Now to run it:
+Ok. Now to run it:
 
 ```console
 $ python recursive_summarize.py -f png_read_info libpng16.so.16.38.0_stripped
