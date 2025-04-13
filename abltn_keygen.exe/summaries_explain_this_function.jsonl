@@ -1,0 +1,14 @@
+{"FUN_0040604b": "This function reads a series of digits and letters from a given pointer, and returns an integer representation of that series of digits and letters. If the first character is a minus sign, the returned value will be negative. If the first character is a zero, the next character may be an 'x' or 'X', indicating that the number is in hexadecimal format, or a digit between '1' and '7', indicating that the number is in octal format. If the number is not in hexadecimal or octal format, it is interpreted as a decimal number. If any non-digit characters are encountered before the end of the series, the function will return the value it has parsed up to that point.\n\n"}
+{"FUN_00402b43": "This function adds a given integer to a global variable and returns the result, unless the given integer is negative, in which case it returns the negative of the given integer.\n\n"}
+{"FUN_00405edf": ""}
+{"FUN_00406523": ""}
+{"FUN_00405c28": ""}
+{"FUN_00406591": ""}
+{"FUN_00405ad9": ""}
+{"FUN_00403852": ""}
+{"FUN_004038a2": ""}
+{"FUN_00404a99": ""}
+{"FUN_0040117d": ""}
+{"FUN_004011ef": ""}
+{"FUN_00401299": ""}
+{"FUN_004012e2": ""}

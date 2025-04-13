@@ -39,6 +39,8 @@ for func in functions:
     if name not in callGraph and not func.isThunk():
         callGraph[name] = []
 
+print("finished building call graph")
+
 # Decompile all the functions
 decompiler = DecompInterface()
 
@@ -47,17 +49,25 @@ opt = DecompileOptions()
 opt.grabFromProgram(currentProgram)
 decompiler.setOptions(opt)
 
+print("finished setting decompiler options")
+
 missing = []
 decompiler.openProgram(currentProgram)
 decomps = {}
 for func in tqdm(functions, desc="Decompiling functions"):
-    name = func.getName()
-    decompResult = decompiler.decompileFunction(func, 0, getMonitor())
-    decompFunc = decompResult.getDecompiledFunction()
-    if not decompFunc:
+    try:
+        name = func.getName()
+        decompResult = decompiler.decompileFunction(func, 0, getMonitor())
+        decompFunc = decompResult.getDecompiledFunction()
+        if not decompFunc:
+            missing.append(name)
+            continue
+        decomps[name] = decompFunc.getC()
+    except:
         missing.append(name)
+        print("⚠️ Failed to decompile", name)
+        print("this will be skipped")
         continue
-    decomps[name] = decompFunc.getC()
 decompiler.closeProgram()
 
 # Save the decompilations

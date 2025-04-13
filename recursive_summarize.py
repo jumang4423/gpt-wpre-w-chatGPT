@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import sys
 import os
 import json
@@ -13,8 +12,7 @@ import argparse
 from pygments import highlight, lexers, formatters
 
 config = {
-    # TODO: enter chatGPT page session_token
-    "session_token": "YOUR SESSION TOKEN GOES HERE",
+    "session_token": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..n07j1Dd_z01lzHCz.nW34I8eot3-ZnKGUr03fSkTs1R9P-VAm24Zoz-ciptLlat5yA-r2Ger0yC2EvBlOJAhOR1TUA50d151R3dJGNCwy-KT9vPI6pNJ0-FvbUKMpw-QXOTEzNlz8s57UQYz8ySJlFX-M5xkI6K6qb6XraYXzCuxBKmX_RDGAdfIrZBmTF_rsK5ekKwwmDdmLJBXtKDoNQCqQRyLsgI577YGFEJTn4YD5aeH3KuHRsaKBOtn9ENw7MmPBlV9rI-WxsaxT3VJOIA3zLyZvxKvr1LcrJnRJTL4QSrNRoh-sDUS46qFJWPWWdtNUB5ndO2bYXoYWE8xEf0E_JSKV-635_3gr4m133NU8Q5DVYgjcNGWBiehqPwGOsaDL7CXyyZKuQ32VvEKlU5M17eLg3l2-ZRvqgkWdwyPmbmlrrkwySqcMKIQZgMTIKKa065IIJb3Xkbj1WLD1sOH29GhoO7iNeZ5okhggclqawyD0eLo9l4mdmvmykJpYZhaL_P5fprRbh5Cc13xqExEQTuBjv5aREqER004LvcSB78RP1vFBhkHk7zEp3VBSCpQ-RUB1ONCPms0wpTLK3xXxa8O57BEjrj-xZvNXDM_cn_9bIX8lo_W7GYcnjyNMOZoSjQwnBZnhYQjBz24hJjZMCefIQ4OvNYYVcJIfw0ze-K8dgGJKItRA0RaIFrEAqdLw7ge04_zeBcs6MLdjrjp-k6z5Dk01e27H3g_xMF5nWdIdXaDn3qm4-H89QVjI3rHLuvZM6KK_eT-uznsAm1GAqzMPBWfk-J696X3-WkWprTU5a2Dupyd3uh1Ut3dtdpiOv41kwLszrChSDzY9XXgObjae8-aM37ccB62pi-RH-S9cFtFhTDSnKk2zWeYoaOJ19seCWoB2HH4y3c1-vPHkiTgar3rOU65HLNyl7mpXXFixVl9xShzdcJ59BZr1cjrioVjPEkUntgm9GDaVwInkL8uBSUrAKLANbMDkcRyE62uOuQ2uQYwucBAJdhCifgXeJd-dsFfiW2EQV74JwAjMfn7vOEftFnH0K2VbiF95SVvRzdZ-suxJzizIKyJsehI18Ez1pu7-dZHvv-BlhzfOVAOGUK1WK-eJB8yQP9vBzH8Ktn295owYXpmzPpxg8KJuOXQ5JfQnhNXjNeWglbYhu3ok88rTUxbrfMTkji0VHqar7527U6mMhb_QizEM5V6oEriAYP4tJPJzkYJMEGFx8_8XTEnd5NP3zRAtC5ZizNvbGaG8n2RWXDRfBuA-R5ST2yaM57_GBrnMH662X-AqLEk2z3HyYfqMKusmzsKhbOArrIOlKjuSUrn5KYUgPYmmOYuYw9IP3qWzyWn59F5EQYgOv8jMLZXYPbeoPdzg92iM3WK42y_HJBQEt84pgQWOWNblxBSEjmyPvi7fsPHixCGp_DF2k6qkHep_2M6M-aRlhji9yg2_K0A7Jju1I3Gh518FRjGnteORsxA05_-byriL5QszNt1ubDLCngaY1qU1mb1z3XvJbKQhPbBRbwDEjX2Ux6UjKqtNCHE1G-XkaUpHCYzD7QuEagcRN7ZHDjkYvCDiLwls7Zg-0T3izgXD0d5BOoW9XtUGsyE2mT2a_17ziv1hwffE12QmpjHw1mccQJ_WUPDrXUoqsXDE7mALZBZ0NSs6cV-d48brh3jW_ulFt78AFSp-r6-MLC2ZhSTZNL7Nk87oBKNaFmCO8KlZZe26p_K-zRMfwApB4V28fKV24hmMDOtJN9lDh55QVScpo9UDhcnzAM3Z25pd9NrL9zDCdc2nA4tbuuQUAbu86iNMknfH1N7kHrwWc1JQEMpl-uik7YQSpmA0kcwOElCauReIc7ER9l7SuqGyG9UaeEwOW3y_SBl3ozfS6ychRFu9XvWw_YSzF22fnkVIrAqAiSkAcPxqPfPqqAAOccEk2L7KsKqcO_lz0Tw09XubiDivhI5xoXdn4BODJsFKIyJk5ymyTRu74COTDXUYEiWpe7DOOaKKQMNZ0VzfiaIv-u_aefVV-nIY0m3703kmtOHrIlg0BsoMpxDkAhkQ-WQUASl9DDLf7GPWAlR6ZHA-gVea7zsjDqo6CkfJTcBv_5j2-hMKfQN44-w5Omk5wFNT0xUeQ-Zg939X4mcUIxCYTANg4IgW0XA-E3HiRZ9VlSd_xoQgLVVjkRXb_lj5Vkf2IyJ-CBNXnqDoRlS0Fj-RFB7wUnopfK0G51FKBTtCXqSjPyUfI34UOmfQPbmLG6UoAJ2e5hVLpt4I-lbL1M1vlCrVygNnOtZfPGZU58HsjSc.Uh1K9EyYUjChJhauVTS7Pg",
     "prompts": [
         "explain this function",
         "decompile to python",
@@ -77,9 +75,8 @@ def summarize(text, max_tokens=256):
         completion = resp['message']
         CurrentConvoId = conversation_id
     except:
-        print("error while summarizing")
-        print("try in 1h later")
-        sys.exit(1)
+        print('Error in summarization')
+
 
     print("SUMMARY:")
     print(completion)
@@ -142,8 +139,16 @@ def summarize_all(topo_order, callgraph, decompilations, max_lines=100, already_
     for func in topo_order:
         if func in summaries:
             continue
-        callees = callgraph[func]
-        decomp = clean_decomp(decompilations[func])
+        try:
+            callees = callgraph[func]
+        except:
+            continue
+
+
+        try:
+            decomp = clean_decomp(decompilations[func])
+        except:
+            continue
         # First try to summarize the whole function
         summary = None
         try:
